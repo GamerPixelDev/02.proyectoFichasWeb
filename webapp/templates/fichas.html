@@ -3,30 +3,36 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Gestión de Usuarios</title>
+        <title>Gestión de fichas</title>
     </head>
     <body>
-        <h1>Gestión de Usuarios</h1>
-        <table border="1">
-            <tr>
-                <th>ID</th>
-                <th>Nombre de Usuario</th>
-                <th>Rol</th>
-                <th>Acciones</th>
-            </tr>
-            {% for usuario in usuarios %}
-            <tr>
-                <td>{{ usuario.id }}</td>
-                <td>{{ usuario.nombre_usuario }}</td>
-                <td>{{ usuario.rol }}</td>
-                <td>
-                    <a href="{{ url_for('main_routes.editar_usuario', usuario_id=usuario.id) }}">Editar</a> |
-                    <a href="{{ url_for('main_routes.eliminar_usuario', usuario_id=usuario.id) }}">Eliminar</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
-        <br>
-        <a href="{{ url_for('main_routes.dashboard') }}">Volver al Panel Principal</a>
+        <h1>Bienvenido, {{ username }}</h1>
+        <p>Rol: {{ role }}</p>
+        <h2>Gestión de fichas</h2>
+        {% if fichas %}
+            <table border="1" cellpadding="5" cellspacing="0">
+                <tr>
+                    <th>Nombre</th>
+                    <th>Edad</th>
+                    <th>Ciudad</th>
+                    <th>Acciones</th>
+                </tr>
+                {% for ficha in fichas %}
+                    <tr>
+                        <td>{{ ficha.nombre }}</td>
+                        <td>{{ ficha.edad }}</td>
+                        <td>{{ ficha.ciudad }}</td>
+                        <td>
+                            <a href="{{ url_for('main_routes.editar_ficha', id=ficha.id) }}">Editar</a> |
+                            <a href="{{ url_for('main_routes.eliminar_ficha', id=ficha.id) }}">Eliminar</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            <p>No hay fichas registradas todavía.</p>
+        {% endif %}
+        <hr>
+            <a href="{{ url_for('main_routes.dashboard') }}" class="btn btn-danger mt-2">Volver</a>
     </body>
 </html>
