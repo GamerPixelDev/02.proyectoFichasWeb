@@ -68,3 +68,20 @@ def logout():
     flash("Has cerrado sesión exitosamente.", "info")
     user_logger.info(f"Usuario '{user}' ha cerrado sesión.")
     return redirect(url_for('main_routes.login'))
+
+# === OTRAS RUTAS DE GESTIÓN DE USUARIOS (AGREGAR, EDITAR, ELIMINAR) ===
+@main_routes.route("/usuarios/editar/<id>")
+def editar_usuario(id):
+    if "user" not in session:
+        flash("Por favor, inicia sesión para acceder a esta función.", "warning")
+        return redirect(url_for("main_routes.login"))
+    flash(f"Función de editar usuario {id} aún no implementada.", "info")
+    return redirect(url_for("main_routes.gestion_usuarios"))
+
+@main_routes.route("/usuarios/eliminar/<id>")
+def eliminar_usuario(id):
+    if "user" not in session:
+        flash("Por favor, inicia sesión para acceder a esta función.", "warning")
+        return redirect(url_for("main_routes.login"))
+    flash(f"Función de eliminar usuario {id} aún no implementada.", "info")
+    return redirect(url_for("main_routes.gestion_usuarios"))

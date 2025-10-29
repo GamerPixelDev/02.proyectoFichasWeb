@@ -20,8 +20,8 @@
                 <td>{{ usuario.nombre_usuario }}</td>
                 <td>{{ usuario.rol }}</td>
                 <td>
-                    <a href="{{ url_for('editar_usuario', id=usuario.id) }}">Editar</a> |
-                    <a href="{{ url_for('eliminar_usuario', id=usuario.id) }}">Eliminar</a>
+                    <a href="{{ url_for('main_routes.editar_usuario', id=usuario.id) }}">Editar</a> |
+                    <a href="{{ url_for('main_routes.eliminar_usuario', id=usuario.id) }}">Eliminar</a>
                 </td>
             </tr>
             {% endfor %}
