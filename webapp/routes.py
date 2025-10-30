@@ -4,6 +4,7 @@ from gestion_fichas.usuarios import autenticar_usuario, cargar_usuarios, guardar
 from gestion_fichas.fichas import cargar_fichas, guardar_fichas
 from gestion_fichas.session_manager import cerrar_sesion
 from gestion_fichas.logger_config import app_logger, user_logger
+import uuid
 
 main_routes = Blueprint('main_routes', __name__)
 
@@ -138,10 +139,12 @@ def nueva_ficha():
         ciudad = request.form['ciudad'].strip()
         fichas = cargar_fichas()
         nueva = {
-            "id": str(len(fichas) + 1),
+            "id": str(uuid.uuid4()),
             "nombre": nombre,
             "edad": edad,
-            "ciudad": ciudad
+            "ciudad": ciudad,
+            "fecha_creacion": datetime.now().isoformat(),
+            "fecha_modificacion": None
         }
         fichas.append(nueva)
         guardar_fichas(fichas)
