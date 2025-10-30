@@ -1,7 +1,10 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from gestion_fichas.usuarios import autenticar_usuario, cargar_usuarios
+from datetime import datetime
+from gestion_fichas.usuarios import autenticar_usuario, cargar_usuarios, guardar_usuarios, registrar_usuario, cambiar_pass_propio, cambiar_pass_usuario_admin
+from gestion_fichas.fichas import cargar_fichas, guardar_fichas
 from gestion_fichas.session_manager import cerrar_sesion
 from gestion_fichas.logger_config import app_logger, user_logger
+import uuid
 
 main_routes = Blueprint('main_routes', __name__)
 
@@ -39,17 +42,152 @@ def dashboard():
     rol = session.get("rol", "editor")
     return render_template('dashboard.html', username=username, role=rol)
 
+# === RUTA PERFIL USUARIO ===
+@main_routes.route('/area_personal', methods=['GET', 'POST'])
+def area_personal():
+    if "usuario" not in session:
+        flash("Por favor, inicia sesión para acceder a tu perfil.", "warning")
+        return redirect(url_for('main_routes.login'))
+    username = session["usuario"]
+    rol = session.get("rol", "editor")
+    if request.method == 'POST':
+        nuevo_nombre = request.form.get('nuevo_nombre', '').strip()
+        if nuevo_nombre:
+            usuarios = cargar_usuarios()
+            for usuario in usuarios:
+                if usuario['username'] == username:
+                    usuario['username'] = nuevo_nombre
+                    usuario['fecha_modificacion'] = datetime.now().isoformat()
+                    guardar_usuarios(usuarios)
+                    session['usuario'] = nuevo_nombre # Actualizar sesión
+                    flash("Nombre de usuario actualizado correctamente.", "success")
+                    user_logger.info(f"Usuario '{username}' cambió su nombre a '{nuevo_nombre}'.")
+                    return redirect(url_for('main_routes.area_personal'))
+                else:
+                    flash("El nombre no puede estar vacío.", "danger")
+    return render_template('area_personal.html', username = username, rol = rol)
+
+
 # === GESTIÓN DE USUARIOS (SOLO ADMIN) ===
 @main_routes.route('/usuarios')
 def gestion_usuarios():
-    if "usuario" not in session:
-        flash("Por favor, inicia sesión para acceder a la gestión de usuarios.", "warning")
+    if "usuario" not in session or session.get("rol") != "admin":
+        flash("Acceso restringido a administradores.", "warning")
         return redirect(url_for('main_routes.login'))
-    if session.get("rol") != "admin":
-        flash("No tienes permisos para acceder a esta sección.", "danger")
-        return redirect(url_for('main_routes.dashboard'))
+    usuarios = cargar_usuarios() #Lista de usuarios cargada desde la función correspondiente
+    username = session["usuario"] #Nombre del usuario que ha iniciado sesión
+    rol = session.get("rol", "editor") #Rol del usuario que ha iniciado sesión
+    return render_template('usuarios.html', username=username, role=rol, usuarios=usuarios)
+
+@main_routes.route('/usuarios/nuevo', methods=['GET', 'POST'])
+def nuevo_usuario():
+    if "usuario" not in session or session.get("rol") != "admin":
+        flash("Acceso restringido a administradores.", "warning")
+        return redirect(url_for('main_routes.login'))
+    if request.method == 'POST':
+        username = request.form['username'].strip()
+        password = request.form['password'].strip()
+        role = request.form['role'].strip()
+        try:
+            registrar_usuario(username, password, role)
+            flash(f"Usuario {username} creado correctamente.", "success")
+            user_logger.info(f"Administrador '{session['usuario']}' creó un nuevo usuario: {username} con rol {role}.")
+            return redirect(url_for('main_routes.gestion_usuarios'))
+        except Exception as e:
+            app_logger.error(f"Error al crear usuario: {e}")
+            flash("Ocurrió un error al crear el usuario. Inténtalo de nuevo.", "danger")
+    return render_template('nuevo_usuario.html')
+
+@main_routes.route('/usuarios/editar/<id>', methods=['GET', 'POST'])
+def editar_usuario(id):
+    if "usuario" not in session or session.get("rol") != "admin":
+        flash("Acceso restringido a administradores.", "warning")
+        return redirect(url_for('main_routes.login'))
     usuarios = cargar_usuarios()
-    return render_template('usuarios.html', usuarios=usuarios)
+    usuario = next((u for u in usuarios if u.get("id") == id), None)
+    if not usuario:
+        flash("Usuario no encontrado.", "danger")
+        return redirect(url_for('main_routes.gestion_usuarios'))
+    if request.method == 'POST':
+        usuario["username"] = request.form['username'].strip()
+        usuario["role"] = request.form['role'].strip()
+        try:
+            guardar_usuarios(usuarios)
+            flash(f"Usuario {usuario['username']} actualizado correctamente.", "success")
+            user_logger.info(f"Administrador '{session['usuario']}' editó el usuario: {usuario}.")
+            return redirect(url_for('main_routes.gestion_usuarios'))
+        except Exception as e:
+            app_logger.error(f"Error al editar usuario: {e}")
+            flash("Ocurrió un error al editar el usuario. Inténtalo de nuevo.", "danger")
+    return render_template('editar_usuario.html', usuario=usuario)
+
+@main_routes.route('/usuarios/eliminar/<id>', methods=['GET', 'POST'])
+def eliminar_usuario(id):
+    if "usuario" not in session or session.get("rol") != "admin":
+        flash("Acceso restringido a administradores.", "warning")
+        return redirect(url_for('main_routes.login'))
+    usuarios = cargar_usuarios()
+    usuario = next((u for u in usuarios if u.get("id") == id), None)
+    if not usuario:
+        flash("Usuario no encontrado.", "danger")
+        return redirect(url_for('main_routes.gestion_usuarios'))
+    if request.method == 'POST':
+        usuarios.remove(usuario)
+        try:
+            guardar_usuarios(usuarios)
+            flash(f"Usuario {usuario['username']} eliminado correctamente.", "success")
+            user_logger.info(f"Administrador '{session['usuario']}' eliminó el usuario: {usuario}.")
+            return redirect(url_for('main_routes.gestion_usuarios'))
+        except Exception as e:
+            app_logger.error(f"Error al eliminar usuario: {e}")
+            flash("Ocurrió un error al eliminar el usuario. Inténtalo de nuevo.", "danger")
+    return render_template('confirmar_eliminar_usuario.html', usuario=usuario)
+
+@main_routes.route('/usuarios/cambiar_password/<username>', methods=['GET', 'POST'])
+def cambiar_password_usuario_admin(username):
+    if "usuario" not in session or session.get("rol") != "admin":
+        flash("Acceso restringido a administradores.", "warning")
+        return redirect(url_for('main_routes.dashboard'))
+    if request.method == 'POST':
+        new_password = request.form['new_password'].strip()
+        try:
+            confirm_password = request.form['confirm_password'].strip()
+            if new_password != confirm_password:
+                flash("Las contraseñas no coinciden.", "danger")
+            else:
+                if cambiar_pass_usuario_admin(username, new_password):
+                    flash(f"Contraseña del usuario {username} cambiada correctamente.", "success")
+                    user_logger.info(f"Administrador '{session['usuario']}' cambió la contraseña del usuario '{username}'.")
+                    return redirect(url_for('main_routes.gestion_usuarios'))
+        except Exception as e:
+            app_logger.error(f"Error al cambiar contraseña del usuario: {e}")
+            flash("Ocurrió un error al cambiar la contraseña. Inténtalo de nuevo.", "danger")
+    return render_template('cambiar_password_usuario_admin.html', username=username)
+
+#=== GESTIÓN USUARIO PROPIO ===
+@main_routes.route('/usuario/cambiar_password', methods=['GET', 'POST'])
+def cambiar_password_editor():
+    if "usuario" not in session:
+        flash("Por favor, inicia sesión para acceder a esta función.", "warning")
+        return redirect(url_for('main_routes.login'))
+    if request.method == 'POST':
+        old_password = request.form['old_password'].strip()
+        new_password = request.form['new_password'].strip()
+        try:
+            confirm_password = request.form['confirm_password'].strip()
+            if new_password != confirm_password:
+                flash("Las contraseñas no coinciden.", "danger")
+                return redirect(url_for('main_routes.cambiar_password_editor'))
+            if cambiar_pass_propio(session['usuario'], old_password, new_password):
+                flash("Contraseña cambiada correctamente.", "success")
+                user_logger.info(f"Usuario '{session['usuario']}' cambió su contraseña.")
+                return redirect(url_for('main_routes.dashboard'))
+            else:
+                flash("Contraseña actual incorrecta.", "danger")
+        except Exception as e:
+            app_logger.error(f"Error al cambiar contraseña: {e}")
+            flash("Ocurrió un error al cambiar la contraseña. Inténtalo de nuevo.", "danger")
+    return render_template('cambiar_password.html')
 
 # === GESTIÓN DE FICHAS ===
 @main_routes.route('/fichas')
@@ -57,7 +195,74 @@ def gestion_fichas():
     if "usuario" not in session:
         flash("Por favor, inicia sesión para acceder a la gestión de fichas.", "warning")
         return redirect(url_for('main_routes.login'))
-    return render_template('fichas.html')
+    fichas = cargar_fichas()
+    username = session["usuario"]
+    rol = session.get("rol", "editor")
+    return render_template('fichas.html', username=username, role=rol, fichas=fichas)
+
+@main_routes.route('/fichas/nueva', methods=['GET', 'POST'])
+def nueva_ficha():
+    if "usuario" not in session:
+        flash("Por favor, inicia sesión para acceder a esta función.", "warning")
+        return redirect(url_for('main_routes.login'))
+    if request.method == 'POST':
+        nombre = request.form['nombre'].strip()
+        edad = int(request.form['edad'].strip())
+        ciudad = request.form['ciudad'].strip()
+        fichas = cargar_fichas()
+        nueva = {
+            "id": str(uuid.uuid4()),
+            "nombre": nombre,
+            "edad": edad,
+            "ciudad": ciudad,
+            "fecha_creacion": datetime.now().isoformat(),
+            "fecha_modificacion": None
+        }
+        fichas.append(nueva)
+        guardar_fichas(fichas)
+        flash(f"Nueva ficha de {nombre} creada correctamente.", "success")
+        user_logger.info(f"Usuario '{session['usuario']}' creó una nueva ficha: {nueva}.")
+        return redirect(url_for('main_routes.gestion_fichas'))
+    return render_template('nueva_ficha.html')
+
+@main_routes.route('/fichas/editar/<id>', methods=['GET', 'POST'])
+def editar_ficha(id):
+    if "usuario" not in session:
+        flash("Por favor, inicia sesión para acceder a esta función.", "warning")
+        return redirect(url_for('main_routes.login'))
+    fichas = cargar_fichas()
+    ficha = next((f for f in fichas if f.get("id") == id), None)
+    if not ficha:
+        flash("Ficha no encontrada.", "danger")
+        return redirect(url_for('main_routes.gestion_fichas'))
+    if request.method == 'POST':
+        ficha['nombre'] = request.form['nombre'].strip()
+        ficha['edad'] = int(request.form['edad'].strip())
+        ficha['ciudad'] = request.form['ciudad'].strip()
+        ficha["fecha_modificacion"] = datetime.now().isoformat()
+        guardar_fichas(fichas)
+        flash(f"Ficha de {ficha['nombre']} actualizada correctamente.", "success")
+        user_logger.info(f"Usuario '{session['usuario']}' editó la ficha: {ficha}.")
+        return redirect(url_for('main_routes.gestion_fichas'))
+    return render_template('editar_ficha.html', ficha=ficha)
+
+@main_routes.route('/fichas/eliminar/<id>', methods=['GET', 'POST'])
+def eliminar_ficha(id):
+    if "usuario" not in session:
+        flash("Por favor, inicia sesión para acceder a esta función.", "warning")
+        return redirect(url_for('main_routes.login'))
+    fichas = cargar_fichas()
+    ficha = next((f for f in fichas if f.get("id") == id), None)
+    if not ficha:
+        flash("Ficha no encontrada.", "danger")
+        return redirect(url_for('main_routes.gestion_fichas'))
+    if request.method == 'POST':
+        fichas.remove(ficha)
+        guardar_fichas(fichas)
+        flash(f"Ficha de {ficha['nombre']} eliminada correctamente.", "success")
+        user_logger.info(f"Usuario '{session['usuario']}' eliminó la ficha: {ficha}.")
+        return redirect(url_for('main_routes.gestion_fichas'))
+    return render_template('confirmar_eliminar_ficha.html', ficha=ficha)
 
 # === CERRAR SESIÓN ===
 @main_routes.route('/logout')
@@ -68,20 +273,3 @@ def logout():
     flash("Has cerrado sesión exitosamente.", "info")
     user_logger.info(f"Usuario '{user}' ha cerrado sesión.")
     return redirect(url_for('main_routes.login'))
-
-# === OTRAS RUTAS DE GESTIÓN DE USUARIOS (AGREGAR, EDITAR, ELIMINAR) ===
-@main_routes.route("/usuarios/editar/<id>")
-def editar_usuario(id):
-    if "user" not in session:
-        flash("Por favor, inicia sesión para acceder a esta función.", "warning")
-        return redirect(url_for("main_routes.login"))
-    flash(f"Función de editar usuario {id} aún no implementada.", "info")
-    return redirect(url_for("main_routes.gestion_usuarios"))
-
-@main_routes.route("/usuarios/eliminar/<id>")
-def eliminar_usuario(id):
-    if "user" not in session:
-        flash("Por favor, inicia sesión para acceder a esta función.", "warning")
-        return redirect(url_for("main_routes.login"))
-    flash(f"Función de eliminar usuario {id} aún no implementada.", "info")
-    return redirect(url_for("main_routes.gestion_usuarios"))
