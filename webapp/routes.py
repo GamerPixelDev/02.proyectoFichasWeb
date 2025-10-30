@@ -93,6 +93,28 @@ def editar_usuario(id):
             flash("Ocurrió un error al editar el usuario. Inténtalo de nuevo.", "danger")
     return render_template('editar_usuario.html', usuario=usuario)
 
+@main_routes.route('/usuarios/eliminar/<id>', methods=['GET', 'POST'])
+def eliminar_usuario(id):
+    if "usuario" not in session or session.get("rol") != "admin":
+        flash("Acceso restringido a administradores.", "warning")
+        return redirect(url_for('main_routes.login'))
+    usuarios = cargar_usuarios()
+    usuario = next((u for u in usuarios if u.get("id") == id), None)
+    if not usuario:
+        flash("Usuario no encontrado.", "danger")
+        return redirect(url_for('main_routes.gestion_usuarios'))
+    if request.method == 'POST':
+        usuarios.remove(usuario)
+        try:
+            guardar_usuarios(usuarios)
+            flash(f"Usuario {usuario['username']} eliminado correctamente.", "success")
+            user_logger.info(f"Administrador '{session['usuario']}' eliminó el usuario: {usuario}.")
+            return redirect(url_for('main_routes.gestion_usuarios'))
+        except Exception as e:
+            app_logger.error(f"Error al eliminar usuario: {e}")
+            flash("Ocurrió un error al eliminar el usuario. Inténtalo de nuevo.", "danger")
+    return render_template('confirmar_eliminar_usuario.html', usuario=usuario)
+
 # === GESTIÓN DE FICHAS ===
 @main_routes.route('/fichas')
 def gestion_fichas():
