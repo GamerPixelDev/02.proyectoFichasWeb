@@ -46,7 +46,7 @@ def dashboard():
 @main_routes.route('/area_personal', methods=['GET', 'POST'])
 def area_personal():
     if "usuario" not in session:
-        flash("Por favor, inicia sesión para acceder a tu perfil.", "warning")
+        flash("Por favor, inicia sesión para acceder a tu área personal.", "warning")
         return redirect(url_for('main_routes.login'))
     username = session["usuario"]
     rol = session.get("rol", "editor")
@@ -54,19 +54,18 @@ def area_personal():
         nuevo_nombre = request.form.get('nuevo_nombre', '').strip()
         if nuevo_nombre:
             usuarios = cargar_usuarios()
-            for usuario in usuarios:
-                if usuario['username'] == username:
-                    usuario['username'] = nuevo_nombre
-                    usuario['fecha_modificacion'] = datetime.now().isoformat()
+            for user in usuarios:
+                if user['username'] == username:
+                    user['username'] = nuevo_nombre
+                    user['fecha_modificacion'] = datetime.now().isoformat()
                     guardar_usuarios(usuarios)
                     session['usuario'] = nuevo_nombre # Actualizar sesión
                     flash("Nombre de usuario actualizado correctamente.", "success")
                     user_logger.info(f"Usuario '{username}' cambió su nombre a '{nuevo_nombre}'.")
-                    return redirect(url_for('main_routes.area_personal'))
-                else:
-                    flash("El nombre no puede estar vacío.", "danger")
+                    break
+        else:
+            flash("El nombre no puede estar vacío.", "danger")
     return render_template('area_personal.html', username = username, rol = rol)
-
 
 # === GESTIÓN DE USUARIOS (SOLO ADMIN) ===
 @main_routes.route('/usuarios')
@@ -166,7 +165,7 @@ def cambiar_password_usuario_admin(username):
 
 #=== GESTIÓN USUARIO PROPIO ===
 @main_routes.route('/usuario/cambiar_password', methods=['GET', 'POST'])
-def cambiar_password_editor():
+def cambiar_password():
     if "usuario" not in session:
         flash("Por favor, inicia sesión para acceder a esta función.", "warning")
         return redirect(url_for('main_routes.login'))
@@ -177,7 +176,7 @@ def cambiar_password_editor():
             confirm_password = request.form['confirm_password'].strip()
             if new_password != confirm_password:
                 flash("Las contraseñas no coinciden.", "danger")
-                return redirect(url_for('main_routes.cambiar_password_editor'))
+                return redirect(url_for('main_routes.cambiar_password'))
             if cambiar_pass_propio(session['usuario'], old_password, new_password):
                 flash("Contraseña cambiada correctamente.", "success")
                 user_logger.info(f"Usuario '{session['usuario']}' cambió su contraseña.")

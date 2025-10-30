@@ -13,9 +13,6 @@
         <div class="container">
             <h1 class="mb-3">Bienvenido, {{ username }}</h1>
             <p>Tu rol es: <strong>{{ role }}</strong></p>
-            <ul>
-                <li><a href="{{ url_for('main_routes.area_personal') }}" class="btn btn-info m-2">👤 Área personal</a>
-            </ul>
             {% if role == 'admin' %}
                 <h2 class="mt-4">Funciones de administrador</h2>
                 <ul class="list-unstyled">
@@ -28,8 +25,9 @@
                     <li><a href="{{ url_for('main_routes.gestion_fichas') }}" class="btn btn-success m-2">Ver o editar fichas</a></li>
                 </ul>
             {% endif %}
-            <hr />
-                <a href="{{ url_for('main_routes.logout') }}" class="btn btn-danger mt-2">Cerrar sesión</a>
+            <hr/>
+                <a href="{{ url_for('main_routes.area_personal') }}" class="btn btn-info mt-2">👤 Área personal</a>
+                <a href="{{ url_for('main_routes.logout') }}" class="btn btn-danger mt-2">🚪 Cerrar sesión</a>
         </div>
     </body>
 </html>

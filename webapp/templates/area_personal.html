@@ -11,9 +11,10 @@
     </head>
     <body class="bg-light text-center p-4">
         <div class="container">
-        <h2>👤 Área personal de {{ username }}</h2>
-        <p>Rol: <strong>{{ rol }}</strong></p>
-        <a href="{{ url_for('main_routes.cambiar_password') }}" class="btn btn-warning m-2">Cambiar contraseña</a>
-        <a href="{{ url_for('main_routes.dashboard') }}" class="btn btn-secondary m-2">Volver al panel</a>
-    </div>
+            <h2>👤 Área personal de {{ username }}</h2>
+            <p>Rol: <strong>{{ rol }}</strong></p>
+            <a href="{{ url_for('main_routes.cambiar_password') }}" class="btn btn-warning m-2">Cambiar contraseña</a>
+            <a href="{{ url_for('main_routes.dashboard') }}" class="btn btn-secondary m-2">Volver al panel</a>
+        </div>
+    </body>
 </html>
