@@ -13,6 +13,8 @@
         <div class="container">
             <h1 class="mb-3">Bienvenido, {{ username }}</h1>
             <p>Tu rol es: <strong>{{ role }}</strong></p>
+            <ul>
+                <li><a href="{{ url_for('main_routes.perfil') }}" class="btn btn-info m-2">👤 Área personal</a>
             {% if role == 'admin' %}
                 <h2 class="mt-4">Funciones de administrador</h2>
                 <ul class="list-unstyled">
