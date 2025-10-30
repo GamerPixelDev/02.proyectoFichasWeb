@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from gestion_fichas.usuarios import autenticar_usuario, cargar_usuarios
+from gestion_fichas.usuarios import autenticar_usuario, cargar_usuarios, guardar_usuarios, registrar_usuario
 from gestion_fichas.fichas import cargar_fichas, guardar_fichas
 from gestion_fichas.session_manager import cerrar_sesion
 from gestion_fichas.logger_config import app_logger, user_logger
@@ -69,6 +69,29 @@ def nuevo_usuario():
             app_logger.error(f"Error al crear usuario: {e}")
             flash("Ocurrió un error al crear el usuario. Inténtalo de nuevo.", "danger")
     return render_template('nuevo_usuario.html')
+
+@main_routes.route('/usuarios/editar/<id>', methods=['GET', 'POST'])
+def editar_usuario(id):
+    if "usuario" not in session or session.get("rol") != "admin":
+        flash("Acceso restringido a administradores.", "warning")
+        return redirect(url_for('main_routes.login'))
+    usuarios = cargar_usuarios()
+    usuario = next((u for u in usuarios if u.get("id") == id), None)
+    if not usuario:
+        flash("Usuario no encontrado.", "danger")
+        return redirect(url_for('main_routes.gestion_usuarios'))
+    if request.method == 'POST':
+        usuario["username"] = request.form['username'].strip()
+        usuario["role"] = request.form['role'].strip()
+        try:
+            guardar_usuarios(usuarios)
+            flash(f"Usuario {usuario['username']} actualizado correctamente.", "success")
+            user_logger.info(f"Administrador '{session['usuario']}' editó el usuario: {usuario}.")
+            return redirect(url_for('main_routes.gestion_usuarios'))
+        except Exception as e:
+            app_logger.error(f"Error al editar usuario: {e}")
+            flash("Ocurrió un error al editar el usuario. Inténtalo de nuevo.", "danger")
+    return render_template('editar_usuario.html', usuario=usuario)
 
 # === GESTIÓN DE FICHAS ===
 @main_routes.route('/fichas')
