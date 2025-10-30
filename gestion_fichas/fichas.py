@@ -1,4 +1,4 @@
-import json, os
+import json, os, uuid
 from datetime import datetime
 from gestion_fichas.utils import pedir_nombre, pedir_edad, pedir_ciudad
 from gestion_fichas.logger_config import app_logger, error_logger, user_logger
@@ -56,6 +56,7 @@ def crear_ficha(fichas, nombre_archivo = FICHAS_FILE):
         ciudad = pedir_ciudad()
         fecha_now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
         nueva_ficha={
+            "id": str(uuid.uuid4()),
             "nombre": nombre,
             "edad": edad,
             "ciudad": ciudad,
