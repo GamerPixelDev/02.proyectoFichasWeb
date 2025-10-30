@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from datetime import datetime
 from gestion_fichas.usuarios import autenticar_usuario, cargar_usuarios, guardar_usuarios, registrar_usuario
 from gestion_fichas.fichas import cargar_fichas, guardar_fichas
 from gestion_fichas.session_manager import cerrar_sesion
@@ -163,6 +164,7 @@ def editar_ficha(id):
         ficha['nombre'] = request.form['nombre'].strip()
         ficha['edad'] = int(request.form['edad'].strip())
         ficha['ciudad'] = request.form['ciudad'].strip()
+        ficha["fecha_modificacion"] = datetime.now().isoformat()
         guardar_fichas(fichas)
         flash(f"Ficha de {ficha['nombre']} actualizada correctamente.", "success")
         user_logger.info(f"Usuario '{session['usuario']}' editó la ficha: {ficha}.")
@@ -185,7 +187,7 @@ def eliminar_ficha(id):
         flash(f"Ficha de {ficha['nombre']} eliminada correctamente.", "success")
         user_logger.info(f"Usuario '{session['usuario']}' eliminó la ficha: {ficha}.")
         return redirect(url_for('main_routes.gestion_fichas'))
-    return render_template('confirmar_eliminar.html', ficha=ficha)
+    return render_template('confirmar_eliminar_ficha.html', ficha=ficha)
 
 # === CERRAR SESIÓN ===
 @main_routes.route('/logout')
@@ -196,18 +198,6 @@ def logout():
     flash("Has cerrado sesión exitosamente.", "info")
     user_logger.info(f"Usuario '{user}' ha cerrado sesión.")
     return redirect(url_for('main_routes.login'))
-
-# === OTRAS RUTAS DE GESTIÓN DE USUARIOS (AGREGAR, EDITAR, ELIMINAR) ===
-@main_routes.route("/usuarios/editar/<id>")
-def editar_usuario(id):
-    if "user" not in session:
-        flash("Por favor, inicia sesión para acceder a esta función.", "warning")
-        return redirect(url_for("main_routes.login"))
-    flash(f"Función de editar usuario {id} aún no implementada.", "info")
-    return redirect(url_for("main_routes.gestion_usuarios"))
-
-@main_routes.route("/usuarios/eliminar/<id>")
-def eliminar_usuario(id):
     if "user" not in session:
         flash("Por favor, inicia sesión para acceder a esta función.", "warning")
         return redirect(url_for("main_routes.login"))
