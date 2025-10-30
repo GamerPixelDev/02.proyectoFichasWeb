@@ -68,7 +68,7 @@ def nuevo_usuario():
         except Exception as e:
             app_logger.error(f"Error al crear usuario: {e}")
             flash("Ocurrió un error al crear el usuario. Inténtalo de nuevo.", "danger")
-    return render_template('nuevo_usuario.html') 
+    return render_template('nuevo_usuario.html')
 
 # === GESTIÓN DE FICHAS ===
 @main_routes.route('/fichas')
