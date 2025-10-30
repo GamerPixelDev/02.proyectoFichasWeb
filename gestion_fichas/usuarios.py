@@ -80,21 +80,14 @@ def registrar_usuario(username: str, password: str, role: str = "editor") -> dic
 _SESSIONS = {} #Sessions in memory: token -> {user_id, expires_at}
 
 def autenticar_usuario(username: str, password: str):
-    #Comprueba credenciales. Si OK devuelve session_token, user_without_secrets; si no None.
-    print(f"Autenticando usuario: {username}")
+    """Comprueba credenciales y devuelve (usuario_publico, token) si son válidas."""
     usuarios = cargar_usuarios()
-    print(f"Usuarios cargados: {len(usuarios)})")
     user = _buscar_por_username(usuarios, username)
-    print(f"Usuario encontrado: {user['username'] if user else 'NO ENCONTRADO'}")
     if not user:
-        print("Usuario no existe.")
         return None
     salt = bytes.fromhex(user["salt"])
-    print(f"Salt obtenido: {salt.hex()}")
     if not _verificar_password(password, salt, user["password_hash"]):
         return None
-    resultado = _verificar_password(password, salt, user["password_hash"])
-    print(f"Resultado verificación contraseña: {resultado}.")
     #Generar token y guardar sesion en memoria
     token = secrets.token_urlsafe(32)
     expires_at = datetime.now() + timedelta(hours = TOKEN_EXPIRATION_HOURS)
@@ -115,7 +108,7 @@ def verificar_token(token: str):
     usuarios = cargar_usuarios() #Cargamos usuario
     for u in usuarios:
         if u["id"] == ses["user_id"]:
-            return {k: v for k, v in u.items() if k not in ("salt", "password:hash")}
+            return {k: v for k, v in u.items() if k not in ("salt", "password_hash")}
     return None
 
 def logout(token: str):
@@ -126,28 +119,20 @@ def logout(token: str):
         return True
     return False
 
-def cambiar_pass_propio(username):
-    usuarios= cargar_usuarios()
+def cambiar_pass_propio(username: str, old_password: str, new_password: str) -> bool:
+    """Permite que un usuario cambie su propia contraseña."""
+    usuarios = cargar_usuarios()
     user = _buscar_por_username(usuarios, username)
     if not user:
-        print("Usuario no encontrado.")
         return False
-    antigua = input("Introduce tu contraseña actual: ").strip()
     salt = bytes.fromhex(user["salt"])
-    if not _verificar_password(antigua, salt, user["password_hash"]):
-        print("Contraseña actual incorrecta.")
+    if not _verificar_password(old_password, salt, user["password_hash"]):
         return False
-    nueva = input("Introduce tu nueva contraseña (mínimo 6 caracteres): ").strip()
-    if len(nueva) < 6:
-        print("La nueva contraseña es demasiado corta.")
-        return False
-    #actualizamos
     new_salt = _generar_salt()
     user["salt"] = new_salt.hex()
-    user["password_hash"] = _hash_password(nueva, new_salt)
+    user["password_hash"] = _hash_password(new_password, new_salt)
     guardar_usuarios(usuarios)
     user_logger.info(f"Usuario {username} cambió su contraseña.")
-    print("Contraseña actualizada con éxito.")
     return True
 
 def verificar_o_crear_admin_inicial():
@@ -250,24 +235,15 @@ def cambiar_rol_admin(current_user):
     print(f"Rol de {username} actualizado a {nuevo}.")
     return True
 
-def cambiar_pass_usuario_admin(current_user):
-    if current_user.get("role") != ADMIN_ROLE:
-        print("Permiso denegado. Solo administradores.")
-        return False
+def cambiar_pass_usuario_admin(username: str, new_password: str) -> bool:
+    """Permite a un administrador cambiar la contraseña de otro usuario."""
     usuarios = cargar_usuarios()
-    username = input("Introduce el nombre del usuario al que quieres cambiar la contraseña: ").strip()
     user = _buscar_por_username(usuarios, username)
     if not user:
-        print("Ese usuario no existe.")
-        return False
-    nueva = input("Introduce la nueva contraseña (mínimo 6 caracteres): ").strip()
-    if len(nueva) < 6:
-        print("La nueva contraseña es demasiado corta.")
         return False
     new_salt = _generar_salt()
     user["salt"] = new_salt.hex()
-    user["password_hash"] = _hash_password(nueva, new_salt)
+    user["password_hash"] = _hash_password(new_password, new_salt)
     guardar_usuarios(usuarios)
-    user_logger.info(f"El administrador {current_user['username']} cambió la contraseña de {username}.")
-    print(f"Contraseña de {username} actualizada con éxito.")
+    user_logger.info(f"Contraseña de {username} actualizada por un administrador.")
     return True
