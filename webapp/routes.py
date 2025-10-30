@@ -42,6 +42,32 @@ def dashboard():
     rol = session.get("rol", "editor")
     return render_template('dashboard.html', username=username, role=rol)
 
+# === RUTA PERFIL USUARIO ===
+@main_routes.route('/area_personal', methods=['GET', 'POST'])
+def area_personal():
+    if "usuario" not in session:
+        flash("Por favor, inicia sesión para acceder a tu perfil.", "warning")
+        return redirect(url_for('main_routes.login'))
+    username = session["usuario"]
+    rol = session.get("rol", "editor")
+    if request.method == 'POST':
+        nuevo_nombre = request.form.get('nuevo_nombre', '').strip()
+        if nuevo_nombre:
+            usuarios = cargar_usuarios()
+            for usuario in usuarios:
+                if usuario['username'] == username:
+                    usuario['username'] = nuevo_nombre
+                    usuario['fecha_modificacion'] = datetime.now().isoformat()
+                    guardar_usuarios(usuarios)
+                    session['usuario'] = nuevo_nombre # Actualizar sesión
+                    flash("Nombre de usuario actualizado correctamente.", "success")
+                    user_logger.info(f"Usuario '{username}' cambió su nombre a '{nuevo_nombre}'.")
+                    return redirect(url_for('main_routes.area_personal'))
+                else:
+                    flash("El nombre no puede estar vacío.", "danger")
+    return render_template('area_personal.html', username = username, rol = rol)
+
+
 # === GESTIÓN DE USUARIOS (SOLO ADMIN) ===
 @main_routes.route('/usuarios')
 def gestion_usuarios():
