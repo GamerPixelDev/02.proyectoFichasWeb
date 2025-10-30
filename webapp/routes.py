@@ -88,6 +88,44 @@ def nueva_ficha():
         return redirect(url_for('main_routes.gestion_fichas'))
     return render_template('nueva_ficha.html')
 
+@main_routes.route('/fichas/editar/<id>', methods=['GET', 'POST'])
+def editar_ficha(id):
+    if "usuario" not in session:
+        flash("Por favor, inicia sesión para acceder a esta función.", "warning")
+        return redirect(url_for('main_routes.login'))
+    fichas = cargar_fichas()
+    ficha = next((f for f in fichas if f['id'] == id), None)
+    if not ficha:
+        flash("Ficha no encontrada.", "danger")
+        return redirect(url_for('main_routes.gestion_fichas'))
+    if request.method == 'POST':
+        ficha['nombre'] = request.form['nombre'].strip()
+        ficha['edad'] = int(request.form['edad'].strip())
+        ficha['ciudad'] = request.form['ciudad'].strip()
+        guardar_fichas(fichas)
+        flash(f"Ficha de {ficha['nombre']} actualizada correctamente.", "success")
+        user_logger.info(f"Usuario '{session['usuario']}' editó la ficha: {ficha}.")
+        return redirect(url_for('main_routes.gestion_fichas'))
+    return render_template('editar_ficha.html', ficha=ficha)
+
+@main_routes.route('/fichas/eliminar/<id>')
+def eliminar_ficha(id):
+    if "usuario" not in session:
+        flash("Por favor, inicia sesión para acceder a esta función.", "warning")
+        return redirect(url_for('main_routes.login'))
+    fichas = cargar_fichas()
+    ficha = next((f for f in fichas if f['id'] == id), None)
+    if not ficha:
+        flash("Ficha no encontrada.", "danger")
+        return redirect(url_for('main_routes.gestion_fichas'))
+    if request.method == 'POST':
+        fichas.remove(ficha)
+        guardar_fichas(fichas)
+        flash(f"Ficha de {ficha['nombre']} eliminada correctamente.", "success")
+        user_logger.info(f"Usuario '{session['usuario']}' eliminó la ficha: {ficha}.")
+        return redirect(url_for('main_routes.gestion_fichas'))
+    return render_template('confirmar_eliminar_ficha.html', ficha=ficha)
+
 # === CERRAR SESIÓN ===
 @main_routes.route('/logout')
 def logout():
@@ -115,9 +153,7 @@ def eliminar_usuario(id):
     flash(f"Función de eliminar usuario {id} aún no implementada.", "info")
     return redirect(url_for("main_routes.gestion_usuarios"))
 
-# === OTRAS RUTAS DE GESTIÓN DE FICHAS (AGREGAR, EDITAR, ELIMINAR) ===
-@main_routes.route("/fichas/editar/<id>")
-def editar_ficha(id):
+
     if "user" not in session:
         flash("Por favor, inicia sesión para acceder a esta función.", "warning")
         return redirect(url_for("main_routes.login"))
