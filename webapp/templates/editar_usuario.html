@@ -23,6 +23,14 @@
                     <option value="admin" {% if usuario.role == 'admin' %}selected{% endif %}>Administrador</option>
                 </select>
             </div>
+            <div class="mb-3">
+                <label for="new_password" class="form-label">Nueva contraseña:</label>
+                <input type="password" class="form-control" id="new_password" name="new_password" placeholder="Deja vacío si no quieres cambiarla">
+            </div>
+            <div class="mb-3">
+                <label for="confirm_password" class="form-label">Confirmar nueva contraseña:</label>
+                <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="Confirma la nueva contraseña">
+            </div>
             <button type="submit" class="btn btn-primary">Guardar cambios</button>
         </form>
         <hr>

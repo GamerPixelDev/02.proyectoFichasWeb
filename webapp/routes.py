@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from datetime import datetime
-from gestion_fichas.usuarios import autenticar_usuario, cargar_usuarios, guardar_usuarios, registrar_usuario, cambiar_pass_propio, cambiar_pass_usuario_admin
+from gestion_fichas.usuarios import (autenticar_usuario, cargar_usuarios, guardar_usuarios, registrar_usuario, cambiar_pass_propio, cambiar_pass_usuario_admin,
+                                    _generar_salt, _hash_password)
 from gestion_fichas.fichas import cargar_fichas, guardar_fichas
 from gestion_fichas.session_manager import cerrar_sesion
 from gestion_fichas.logger_config import app_logger, user_logger
@@ -101,7 +102,7 @@ def nuevo_usuario():
 def editar_usuario(id):
     if "usuario" not in session or session.get("rol") != "admin":
         flash("Acceso restringido a administradores.", "warning")
-        return redirect(url_for('main_routes.login'))
+        return redirect(url_for('main_routes.dashboard'))
     usuarios = cargar_usuarios()
     usuario = next((u for u in usuarios if u.get("id") == id), None)
     if not usuario:
@@ -110,6 +111,18 @@ def editar_usuario(id):
     if request.method == 'POST':
         usuario["username"] = request.form['username'].strip()
         usuario["role"] = request.form['role'].strip()
+        new_password = request.form.get('new_password', '').strip()
+        confirm_password = request.form.get('confirm_password', '').strip()
+        if new_password:
+            if new_password != confirm_password:
+                flash("Las contraseñas no coinciden.", "danger")
+            else:
+                salt = _generar_salt()
+                usuario['salt'] = salt.hex()
+                usuario['password_hash'] = _hash_password(new_password, salt)
+                usuario['fecha_modificacion'] = datetime.now().isoformat()
+                user_logger.info(f"Administrador '{session['usuario']}' cambió la contraseña del usuario '{usuario['username']}'.")
+                flash("Contraseña cambiada correctamente.", "success")
         try:
             guardar_usuarios(usuarios)
             flash(f"Usuario {usuario['username']} actualizado correctamente.", "success")

@@ -10,9 +10,10 @@
     {
         "id": "4fa5ad8f-9407-4271-8374-49473520ddf1",
         "username": "Usuario_GOD",
-        "salt": "164977629d3d9c0ccacd8e197df5edbf",
-        "password_hash": "c05588325953f1814bad0822dc9777f3b8356a9ff0f53eec58af0f7afd6a55a2",
+        "salt": "099dfea5bbab2b73e053ea6df5931028",
+        "password_hash": "dad1fa33bb60fa277967aeb417a38a1e680b95ee3f8cce3fed920465a5edb406",
         "role": "editor",
-        "created_at": "2025-10-30T11:34:39.212099"
+        "created_at": "2025-10-30T11:34:39.212099",
+        "fecha_modificacion": "2025-10-30T17:33:10.629321"
     }
 ]
