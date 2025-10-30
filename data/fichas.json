@@ -26,5 +26,11 @@
         "ciudad": "Don Benito, Badajoz",
         "fecha_creacion": "2025/10/22 20:16:44",
         "fecha_modificacion": "2025/10/23 19:06:20"
+    },
+    {
+        "id": "5",
+        "nombre": "Pepinillo Sabrosón",
+        "edad": 55,
+        "ciudad": "Bajo el Mar"
     }
 ]
