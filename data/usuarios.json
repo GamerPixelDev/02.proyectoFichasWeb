@@ -12,7 +12,7 @@
         "username": "Usuario_GOD",
         "salt": "164977629d3d9c0ccacd8e197df5edbf",
         "password_hash": "c05588325953f1814bad0822dc9777f3b8356a9ff0f53eec58af0f7afd6a55a2",
-        "role": "admin",
+        "role": "editor",
         "created_at": "2025-10-30T11:34:39.212099"
     }
 ]

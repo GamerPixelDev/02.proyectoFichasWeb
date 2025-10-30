@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from datetime import datetime
-from gestion_fichas.usuarios import autenticar_usuario, cargar_usuarios, guardar_usuarios, registrar_usuario
+from gestion_fichas.usuarios import autenticar_usuario, cargar_usuarios, guardar_usuarios, registrar_usuario, cambiar_pass_propio, cambiar_pass_usuario_admin
 from gestion_fichas.fichas import cargar_fichas, guardar_fichas
 from gestion_fichas.session_manager import cerrar_sesion
 from gestion_fichas.logger_config import app_logger, user_logger
@@ -116,6 +116,52 @@ def eliminar_usuario(id):
             app_logger.error(f"Error al eliminar usuario: {e}")
             flash("Ocurrió un error al eliminar el usuario. Inténtalo de nuevo.", "danger")
     return render_template('confirmar_eliminar_usuario.html', usuario=usuario)
+
+@main_routes.route('/usuarios/cambiar_password/<username>', methods=['GET', 'POST'])
+def cambiar_password_usuario_admin(username):
+    if "usuario" not in session or session.get("rol") != "admin":
+        flash("Acceso restringido a administradores.", "warning")
+        return redirect(url_for('main_routes.dashboard'))
+    if request.method == 'POST':
+        new_password = request.form['new_password'].strip()
+        try:
+            confirm_password = request.form['confirm_password'].strip()
+            if new_password != confirm_password:
+                flash("Las contraseñas no coinciden.", "danger")
+            else:
+                if cambiar_pass_usuario_admin(username, new_password):
+                    flash(f"Contraseña del usuario {username} cambiada correctamente.", "success")
+                    user_logger.info(f"Administrador '{session['usuario']}' cambió la contraseña del usuario '{username}'.")
+                    return redirect(url_for('main_routes.gestion_usuarios'))
+        except Exception as e:
+            app_logger.error(f"Error al cambiar contraseña del usuario: {e}")
+            flash("Ocurrió un error al cambiar la contraseña. Inténtalo de nuevo.", "danger")
+    return render_template('cambiar_password_usuario_admin.html', username=username)
+
+#=== GESTIÓN USUARIO PROPIO ===
+@main_routes.route('/usuario/cambiar_password', methods=['GET', 'POST'])
+def cambiar_password_editor():
+    if "usuario" not in session:
+        flash("Por favor, inicia sesión para acceder a esta función.", "warning")
+        return redirect(url_for('main_routes.login'))
+    if request.method == 'POST':
+        old_password = request.form['old_password'].strip()
+        new_password = request.form['new_password'].strip()
+        try:
+            confirm_password = request.form['confirm_password'].strip()
+            if new_password != confirm_password:
+                flash("Las contraseñas no coinciden.", "danger")
+                return redirect(url_for('main_routes.cambiar_password_editor'))
+            if cambiar_pass_propio(session['usuario'], old_password, new_password):
+                flash("Contraseña cambiada correctamente.", "success")
+                user_logger.info(f"Usuario '{session['usuario']}' cambió su contraseña.")
+                return redirect(url_for('main_routes.dashboard'))
+            else:
+                flash("Contraseña actual incorrecta.", "danger")
+        except Exception as e:
+            app_logger.error(f"Error al cambiar contraseña: {e}")
+            flash("Ocurrió un error al cambiar la contraseña. Inténtalo de nuevo.", "danger")
+    return render_template('cambiar_password.html')
 
 # === GESTIÓN DE FICHAS ===
 @main_routes.route('/fichas')
