@@ -124,7 +124,7 @@ def eliminar_ficha(id):
         flash(f"Ficha de {ficha['nombre']} eliminada correctamente.", "success")
         user_logger.info(f"Usuario '{session['usuario']}' eliminó la ficha: {ficha}.")
         return redirect(url_for('main_routes.gestion_fichas'))
-    return render_template('confirmar_eliminar_ficha.html', ficha=ficha)
+    return render_template('confirmar_eliminar.html', ficha=ficha)
 
 # === CERRAR SESIÓN ===
 @main_routes.route('/logout')
@@ -152,18 +152,3 @@ def eliminar_usuario(id):
         return redirect(url_for("main_routes.login"))
     flash(f"Función de eliminar usuario {id} aún no implementada.", "info")
     return redirect(url_for("main_routes.gestion_usuarios"))
-
-
-    if "user" not in session:
-        flash("Por favor, inicia sesión para acceder a esta función.", "warning")
-        return redirect(url_for("main_routes.login"))
-    flash(f"Función de editar ficha {id} aún no implementada.", "info")
-    return redirect(url_for("main_routes.gestion_fichas"))
-
-@main_routes.route("/fichas/eliminar/<id>")
-def eliminar_ficha(id):
-    if "user" not in session:
-        flash("Por favor, inicia sesión para acceder a esta función.", "warning")
-        return redirect(url_for("main_routes.login"))
-    flash(f"Función de eliminar ficha {id} aún no implementada.", "info")
-    return redirect(url_for("main_routes.gestion_fichas"))
