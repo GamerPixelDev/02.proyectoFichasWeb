@@ -17,8 +17,9 @@ def login():
         username = request.form['username'].strip()
         password = request.form['password'].strip()
         try:
-            user, token = autenticar_usuario(username, password)
-            if user:
+            auth_result = autenticar_usuario(username, password)
+            if auth_result:
+                user, token = auth_result
                 session['usuario'] = user['username']
                 session['rol'] = user['role']
                 session['token'] = token
@@ -166,11 +167,15 @@ def cambiar_password_usuario_admin(username):
             confirm_password = request.form['confirm_password'].strip()
             if new_password != confirm_password:
                 flash("Las contraseñas no coinciden.", "danger")
+            elif len(new_password) < 6:
+                flash("La nueva contraseña debe tener al menos 6 caracteres.", "danger")
             else:
                 if cambiar_pass_usuario_admin(username, new_password):
                     flash(f"Contraseña del usuario {username} cambiada correctamente.", "success")
                     user_logger.info(f"Administrador '{session['usuario']}' cambió la contraseña del usuario '{username}'.")
                     return redirect(url_for('main_routes.gestion_usuarios'))
+                else:
+                    flash("Usuario objetivo no encontrado.", "danger")
         except Exception as e:
             app_logger.error(f"Error al cambiar contraseña del usuario: {e}")
             flash("Ocurrió un error al cambiar la contraseña. Inténtalo de nuevo.", "danger")
@@ -189,6 +194,9 @@ def cambiar_password():
             confirm_password = request.form['confirm_password'].strip()
             if new_password != confirm_password:
                 flash("Las contraseñas no coinciden.", "danger")
+                return redirect(url_for('main_routes.cambiar_password'))
+            if len(new_password) < 6:
+                flash("La nueva contraseña debe tener al menos 6 caracteres.", "danger")
                 return redirect(url_for('main_routes.cambiar_password'))
             if cambiar_pass_propio(session['usuario'], old_password, new_password):
                 flash("Contraseña cambiada correctamente.", "success")
