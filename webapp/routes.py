@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from gestion_fichas.usuarios import autenticar_usuario, cargar_usuarios
-from gestion_fichas.fichas import cargar_fichas
+from gestion_fichas.fichas import cargar_fichas, guardar_fichas
 from gestion_fichas.session_manager import cerrar_sesion
 from gestion_fichas.logger_config import app_logger, user_logger
 
@@ -64,6 +64,29 @@ def gestion_fichas():
     username = session["usuario"]
     rol = session.get("rol", "editor")
     return render_template('fichas.html', username=username, role=rol, fichas=fichas)
+
+@main_routes.route('/fichas/nueva', methods=['GET', 'POST'])
+def nueva_ficha():
+    if "usuario" not in session:
+        flash("Por favor, inicia sesión para acceder a esta función.", "warning")
+        return redirect(url_for('main_routes.login'))
+    if request.method == 'POST':
+        nombre = request.form['nombre'].strip()
+        edad = int(request.form['edad'].strip())
+        ciudad = request.form['ciudad'].strip()
+        fichas = cargar_fichas()
+        nueva = {
+            "id": str(len(fichas) + 1),
+            "nombre": nombre,
+            "edad": edad,
+            "ciudad": ciudad
+        }
+        fichas.append(nueva)
+        guardar_fichas(fichas)
+        flash(f"Nueva ficha de {nombre} creada correctamente.", "success")
+        user_logger.info(f"Usuario '{session['usuario']}' creó una nueva ficha: {nueva}.")
+        return redirect(url_for('main_routes.gestion_fichas'))
+    return render_template('nueva_ficha.html')
 
 # === CERRAR SESIÓN ===
 @main_routes.route('/logout')
