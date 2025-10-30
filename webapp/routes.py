@@ -43,16 +43,32 @@ def dashboard():
 # === GESTIÓN DE USUARIOS (SOLO ADMIN) ===
 @main_routes.route('/usuarios')
 def gestion_usuarios():
-    if "usuario" not in session:
-        flash("Por favor, inicia sesión para acceder a la gestión de usuarios.", "warning")
+    if "usuario" not in session or session.get("rol") != "admin":
+        flash("Acceso restringido a administradores.", "warning")
         return redirect(url_for('main_routes.login'))
-    if session.get("rol") != "admin":
-        flash("No tienes permisos para acceder a esta sección.", "danger")
-        return redirect(url_for('main_routes.dashboard'))
-    usuarios = cargar_usuarios()
-    username = session["usuario"]
-    rol = session.get("rol", "editor")
+    usuarios = cargar_usuarios() #Lista de usuarios cargada desde la función correspondiente
+    username = session["usuario"] #Nombre del usuario que ha iniciado sesión
+    rol = session.get("rol", "editor") #Rol del usuario que ha iniciado sesión
     return render_template('usuarios.html', username=username, role=rol, usuarios=usuarios)
+
+@main_routes.route('/usuarios/nuevo', methods=['GET', 'POST'])
+def nuevo_usuario():
+    if "usuario" not in session or session.get("rol") != "admin":
+        flash("Acceso restringido a administradores.", "warning")
+        return redirect(url_for('main_routes.login'))
+    if request.method == 'POST':
+        username = request.form['username'].strip()
+        password = request.form['password'].strip()
+        role = request.form['role'].strip()
+        try:
+            registrar_usuario(username, password, role)
+            flash(f"Usuario {username} creado correctamente.", "success")
+            user_logger.info(f"Administrador '{session['usuario']}' creó un nuevo usuario: {username} con rol {role}.")
+            return redirect(url_for('main_routes.gestion_usuarios'))
+        except Exception as e:
+            app_logger.error(f"Error al crear usuario: {e}")
+            flash("Ocurrió un error al crear el usuario. Inténtalo de nuevo.", "danger")
+    return render_template('nuevo_usuario.html') 
 
 # === GESTIÓN DE FICHAS ===
 @main_routes.route('/fichas')
@@ -94,7 +110,7 @@ def editar_ficha(id):
         flash("Por favor, inicia sesión para acceder a esta función.", "warning")
         return redirect(url_for('main_routes.login'))
     fichas = cargar_fichas()
-    ficha = next((f for f in fichas if f['id'] == id), None)
+    ficha = next((f for f in fichas if f.get("id") == id), None)
     if not ficha:
         flash("Ficha no encontrada.", "danger")
         return redirect(url_for('main_routes.gestion_fichas'))
@@ -108,13 +124,13 @@ def editar_ficha(id):
         return redirect(url_for('main_routes.gestion_fichas'))
     return render_template('editar_ficha.html', ficha=ficha)
 
-@main_routes.route('/fichas/eliminar/<id>')
+@main_routes.route('/fichas/eliminar/<id>', methods=['GET', 'POST'])
 def eliminar_ficha(id):
     if "usuario" not in session:
         flash("Por favor, inicia sesión para acceder a esta función.", "warning")
         return redirect(url_for('main_routes.login'))
     fichas = cargar_fichas()
-    ficha = next((f for f in fichas if f['id'] == id), None)
+    ficha = next((f for f in fichas if f.get("id") == id), None)
     if not ficha:
         flash("Ficha no encontrada.", "danger")
         return redirect(url_for('main_routes.gestion_fichas'))

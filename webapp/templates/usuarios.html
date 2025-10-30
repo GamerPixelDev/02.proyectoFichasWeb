@@ -13,6 +13,7 @@
         <h1>Bienvenido, {{ username }}</h1>
         <p>Rol: {{ role }}</p>
         <h2>Gestión de usuarios</h2>
+        <a href="{{ url_for('main_routes.nuevo_usuario') }}">➕ Crear nuevo usuario</a>
         {% if usuarios %}
             <table border="1" cellpadding="5" cellspacing="0">
                 <tr>
