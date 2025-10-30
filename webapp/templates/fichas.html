@@ -29,7 +29,7 @@
                         <td>{{ ficha.fecha_modificacion or "-" }}</td>
                         <td>
                             <a href="{{ url_for('main_routes.editar_ficha', id=ficha.id) }}" class="btn btn-sm btn-warning">✏️ Editar</a>
-                            <a href="{{ url_for('main_routes.confirmar_eliminar_ficha', id=ficha.id) }}" class="btn btn-sm btn-danger">🗑️ Eliminar</a>
+                            <a href="{{ url_for('main_routes.eliminar_ficha', id=ficha.id) }}" class="btn btn-sm btn-danger">🗑️ Eliminar</a>
                         </td>
                     </tr>
                 {% endfor %}

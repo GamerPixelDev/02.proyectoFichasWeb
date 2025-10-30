@@ -7,7 +7,7 @@ def create_app():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     templates_dir = os.path.join(base_dir, "templates")
     app = Flask(__name__, template_folder = templates_dir)
-    app.secret_key = "super_seceret_key" # Cambiar por una clave segura luego
+    app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-me") # Cambiar por una clave segura luego
     #Importar rutas
     app.register_blueprint(main_routes)
     return app
