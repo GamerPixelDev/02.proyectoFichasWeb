@@ -9,42 +9,50 @@ import uuid
 
 main_routes = Blueprint('main_routes', __name__)
 
-# === RUTA LOGIN ===
+# === LOGIN ===
 @main_routes.route('/', methods=['GET', 'POST'])
-@main_routes.route('/login', methods=['GET', 'POST'])
+#@main_routes.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form['username'].strip()
         password = request.form['password'].strip()
         try:
-            auth_result = autenticar_usuario(username, password)
-            if auth_result:
-                user, token = auth_result
+            user, token = autenticar_usuario(username, password)
+            if user:
                 session['usuario'] = user['username']
                 session['rol'] = user['role']
-                session['token'] = token
                 user_logger.info(f"Usuario '{username}' ha iniciado sesión.")
                 flash(f"Bienvenido, {username}!", "success")
                 return redirect(url_for('main_routes.dashboard'))
             else:
-                flash("Credenciales inválidas. Inténtalo de nuevo.", "danger")
+                flash("Credenciales inválidas.", "danger")
                 user_logger.warning(f"Intento fallido de inicio de sesión para usuario '{username}'.")
         except Exception as e:
             app_logger.error(f"Error durante el inicio de sesión: {e}")
-            flash("Ocurrió un error. Por favor, inténtalo más tarde.", "danger")
+            flash("Ocurrió un error. Inténtalo de nuevo.", "danger")
     return render_template('login.html')
 
-# === RUTA DASHBOARD ===
+# === DASHBOARD ===
 @main_routes.route('/dashboard')
 def dashboard():
     if "usuario" not in session:
-        flash("Por favor, inicia sesión para acceder al dashboard.", "warning")
+        flash("Por favor, inicia sesión para acceder al panel.", "warning")
         return redirect(url_for('main_routes.login'))
     username = session["usuario"]
     rol = session.get("rol", "editor")
-    return render_template('dashboard.html', username=username, role=rol)
+    return render_template('dashboard.html', username = username, role = rol)
 
-# === RUTA PERFIL USUARIO ===
+# === LOGOUT ===
+@main_routes.route('/logout')
+def logout():
+    user = session.get("usuario", "Desconocido")
+    cerrar_sesion()
+    session.clear()
+    flash("Has cerrado sesión exitosamente.", "info")
+    user_logger.info(f"Usuario '{user}' ha cerrado sesión.")
+    return redirect(url_for('main_routes.login'))
+
+# === ÁREA PERSONAL ===
 @main_routes.route('/area_personal', methods=['GET', 'POST'])
 def area_personal():
     if "usuario" not in session:
@@ -74,11 +82,11 @@ def area_personal():
 def gestion_usuarios():
     if "usuario" not in session or session.get("rol") != "admin":
         flash("Acceso restringido a administradores.", "warning")
-        return redirect(url_for('main_routes.login'))
+        return redirect(url_for('main_routes.dashboard'))
     usuarios = cargar_usuarios() #Lista de usuarios cargada desde la función correspondiente
-    username = session["usuario"] #Nombre del usuario que ha iniciado sesión
-    rol = session.get("rol", "editor") #Rol del usuario que ha iniciado sesión
-    return render_template('usuarios.html', username=username, role=rol, usuarios=usuarios)
+    #username = session["usuario"] #Nombre del usuario que ha iniciado sesión
+    #rol = session.get("rol", "editor") #Rol del usuario que ha iniciado sesión
+    return render_template('usuarios.html', usuarios=usuarios)
 
 @main_routes.route('/usuarios/nuevo', methods=['GET', 'POST'])
 def nuevo_usuario():
@@ -117,13 +125,19 @@ def editar_usuario(id):
         if new_password:
             if new_password != confirm_password:
                 flash("Las contraseñas no coinciden.", "danger")
+            elif len(new_password) < 6:
+                flash("La nueva contraseña debe tener al menos 6 caracteres.", "danger")
             else:
-                salt = _generar_salt()
-                usuario['salt'] = salt.hex()
-                usuario['password_hash'] = _hash_password(new_password, salt)
-                usuario['fecha_modificacion'] = datetime.now().isoformat()
-                user_logger.info(f"Administrador '{session['usuario']}' cambió la contraseña del usuario '{usuario['username']}'.")
-                flash("Contraseña cambiada correctamente.", "success")
+                if cambiar_pass_usuario_admin(usuario['username'], new_password):
+                    flash("Contraseña cambiada correctamente.", "success")
+                    user_logger.info(f"Administrador '{session['usuario']}' cambió la contraseña del usuario '{usuario['username']}'.")
+                # Esta parte se comenta porque la función cambiar_pass_usuario_admin ya hace el guardado
+                #salt = _generar_salt()
+                #usuario['salt'] = salt.hex()
+                #usuario['password_hash'] = _hash_password(new_password, salt)
+                #usuario['fecha_modificacion'] = datetime.now().isoformat()
+                #user_logger.info(f"Administrador '{session['usuario']}' cambió la contraseña del usuario '{usuario['username']}'.")
+                #flash("Contraseña cambiada correctamente.", "success")
         try:
             guardar_usuarios(usuarios)
             flash(f"Usuario {usuario['username']} actualizado correctamente.", "success")
@@ -223,13 +237,16 @@ def gestion_fichas():
 @main_routes.route('/fichas/nueva', methods=['GET', 'POST'])
 def nueva_ficha():
     if "usuario" not in session:
-        flash("Por favor, inicia sesión para acceder a esta función.", "warning")
+        flash("Por favor, inicia sesión.", "warning")
         return redirect(url_for('main_routes.login'))
     if request.method == 'POST':
         nombre = request.form['nombre'].strip()
-        edad = int(request.form['edad'].strip())
+        try:
+            edad = int(request.form['edad'].strip())
+        except ValueError:
+            flash("La edad debe ser un número entero.", "danger")
+            return render_template('nueva_ficha.html')
         ciudad = request.form['ciudad'].strip()
-        fichas = cargar_fichas()
         nueva = {
             "id": str(uuid.uuid4()),
             "nombre": nombre,
@@ -238,6 +255,7 @@ def nueva_ficha():
             "fecha_creacion": datetime.now().isoformat(),
             "fecha_modificacion": None
         }
+        fichas = cargar_fichas()
         fichas.append(nueva)
         guardar_fichas(fichas)
         flash(f"Nueva ficha de {nombre} creada correctamente.", "success")
@@ -248,7 +266,7 @@ def nueva_ficha():
 @main_routes.route('/fichas/editar/<id>', methods=['GET', 'POST'])
 def editar_ficha(id):
     if "usuario" not in session:
-        flash("Por favor, inicia sesión para acceder a esta función.", "warning")
+        flash("Por favor, inicia sesión para acceder.", "warning")
         return redirect(url_for('main_routes.login'))
     fichas = cargar_fichas()
     ficha = next((f for f in fichas if f.get("id") == id), None)
@@ -257,7 +275,11 @@ def editar_ficha(id):
         return redirect(url_for('main_routes.gestion_fichas'))
     if request.method == 'POST':
         ficha['nombre'] = request.form['nombre'].strip()
-        ficha['edad'] = int(request.form['edad'].strip())
+        try:
+            ficha['edad'] = int(request.form['edad'].strip())
+        except ValueError:
+            flash("La edad debe ser un número entero.", "danger")
+            return render_template('editar_ficha.html', ficha=ficha)
         ficha['ciudad'] = request.form['ciudad'].strip()
         ficha["fecha_modificacion"] = datetime.now().isoformat()
         guardar_fichas(fichas)
@@ -269,7 +291,7 @@ def editar_ficha(id):
 @main_routes.route('/fichas/eliminar/<id>', methods=['GET', 'POST'])
 def eliminar_ficha(id):
     if "usuario" not in session:
-        flash("Por favor, inicia sesión para acceder a esta función.", "warning")
+        flash("Por favor, inicia sesión para acceder.", "warning")
         return redirect(url_for('main_routes.login'))
     fichas = cargar_fichas()
     ficha = next((f for f in fichas if f.get("id") == id), None)
@@ -283,13 +305,3 @@ def eliminar_ficha(id):
         user_logger.info(f"Usuario '{session['usuario']}' eliminó la ficha: {ficha}.")
         return redirect(url_for('main_routes.gestion_fichas'))
     return render_template('confirmar_eliminar_ficha.html', ficha=ficha)
-
-# === CERRAR SESIÓN ===
-@main_routes.route('/logout')
-def logout():
-    user = session.get("usuario", "Desconocido")
-    cerrar_sesion()
-    session.clear()
-    flash("Has cerrado sesión exitosamente.", "info")
-    user_logger.info(f"Usuario '{user}' ha cerrado sesión.")
-    return redirect(url_for('main_routes.login'))
