@@ -30,5 +30,21 @@
         "ciudad": "Don Benito, Badajoz",
         "fecha_creacion": "2025/10/22 20:16:44",
         "fecha_modificacion": "2025/10/23 19:06:20"
+    },
+    {
+        "id": "027ca6c7-8558-44cc-bbb7-b1c80d37aa79",
+        "nombre": "Alicia Sosa",
+        "edad": 66,
+        "ciudad": "Don Benito",
+        "fecha_creacion": "2025-10-31T11:33:30.328530",
+        "fecha_modificacion": null
+    },
+    {
+        "id": "792e50ff-954d-421d-8379-ffa8289a03dd",
+        "nombre": "José Luis Gallego",
+        "edad": 70,
+        "ciudad": "Don Benito",
+        "fecha_creacion": "2025-10-31T11:33:54.169388",
+        "fecha_modificacion": null
     }
 ]
