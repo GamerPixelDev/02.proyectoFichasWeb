@@ -1,18 +1,10 @@
 [
     {
-        "id": "6f128067-a0b5-40b6-853c-726c1a2a2837",
-        "username": "Carlos",
-        "salt": "64059c6239c4bf7f073410a81d527527",
-        "password_hash": "78fce9e45f17d8ed491058ed8289830b6ffa2e4c28e27254e68825d40c5f16ff",
-        "role": "admin",
-        "created_at": "2025-10-23T20:29:40.507021"
-    },
-    {
         "id": "4fa5ad8f-9407-4271-8374-49473520ddf1",
         "username": "Usuario_GOD",
         "salt": "099dfea5bbab2b73e053ea6df5931028",
         "password_hash": "dad1fa33bb60fa277967aeb417a38a1e680b95ee3f8cce3fed920465a5edb406",
-        "role": "editor",
+        "role": "admin",
         "created_at": "2025-10-30T11:34:39.212099",
         "fecha_modificacion": "2025-10-30T17:33:10.629321"
     }
