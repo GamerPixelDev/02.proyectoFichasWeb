@@ -3,8 +3,9 @@
 {% block title %}Gestión de usuarios{% endblock %}
 
 {% block content %}
-    <h2 class="mb-4 text-center">Gestión de usuarios</h2>
-
+<div class="container mt-4">
+    <h2>Gestión de usuarios</h2>
+    <a href="{{ url_for('main_routes.registrar_usuario') }}" class="btn btn-success mb-3">➕ Nuevo usuario</a>
     <table class="table table-striped shadow">
         <thead class="table-primary">
             <tr>
@@ -19,8 +20,8 @@
                     <td>{{ usuario.username }}</td>
                     <td>{{ usuario.role }}</td>
                     <td>
-                    <a href="{{ url_for('main_routes.editar_usuario', id=usuario.id) }}" class="btn btn-sm btn-warning">Editar</a>
-                    <a href="{{ url_for('main_routes.eliminar_usuario', id=usuario.id) }}" class="btn btn-sm btn-danger">Eliminar</a>
+                    <a href="{{ url_for('main_routes.editar_usuario', id=usuario.id) }}" class="btn btn-sm btn-warning">✏️ Editar</a>
+                    <a href="{{ url_for('main_routes.eliminar_usuario', id=usuario.id) }}" class="btn btn-sm btn-danger">🗑️ Eliminar</a>
                     </td>
                 </tr>
             {% endfor %}
