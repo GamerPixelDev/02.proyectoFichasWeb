@@ -3,9 +3,11 @@
 {% block title %}Gestión de usuarios{% endblock %}
 
 {% block content %}
+<h2>Gestión de usuarios</h2>
+<div class="text-end mb-3">
+    <a href="{{ url_for('main_routes.nuevo_usuario') }}" class="btn btn-success">➕ Nuevo usuario</a>
+</div>
 <div class="container mt-4">
-    <h2>Gestión de usuarios</h2>
-    <a href="{{ url_for('main_routes.registrar_usuario') }}" class="btn btn-success mb-3">➕ Nuevo usuario</a>
     <table class="table table-striped shadow">
         <thead class="table-primary">
             <tr>
